@@ -1,5 +1,5 @@
 use gdnative::{
-    api::{Area2D, Resource},
+    api::Area2D,
     export::{
         hint::{EnumHint, IntHint},
         Export,
@@ -37,6 +37,11 @@ impl Tile {
     }
 
     #[method]
+    fn is_start_tile(&self, #[base] _base: &Area2D) -> bool {
+        self.start_tile
+    }
+
+    #[method]
     fn _ready(&self, #[base] base: &Area2D) {
         // godot_print!("Hello from Tile!")
         base.add_to_group("Tiles", false);
@@ -50,6 +55,7 @@ impl Tile {
 
     #[method]
     fn place_building(&mut self, #[base] base: &Area2D, building_type: BuildingType) {
+        godot_print!("In place building");
         self.has_building = true;
         let t = load::<Texture>(building_type.get_texture_path()).unwrap();
         Self::get_building_icon(base).set_texture(t)
@@ -68,7 +74,7 @@ impl Tile {
         event: Ref<InputEvent>,
         shape_idx: i64,
     ) {
-        godot_print!("Clicked Tile");
+        // godot_print!("Clicked Tile");
     }
 }
 
@@ -93,8 +99,19 @@ impl Map {
     }
 
     #[method]
-    fn _ready(&self, #[base] _base: &Node) {
-        godot_print!("Hello from Map!")
+    fn _ready(&self, #[base] base: &Node) {
+        godot_print!("Hello from Map!");
+        // Should create all_tiles here. not convinced tiles_with_buildings is needed.
+        for tile in base.get_children().iter() {
+            let tile = unsafe { tile.try_to_object::<Area2D>().unwrap().assume_safe() };
+            let is_start_tile = unsafe { tile.call("is_start_tile", &[]) };
+            let is_start_tile = bool::from_variant(&is_start_tile).unwrap();
+            if is_start_tile {
+                godot_print!("Found start_tile");
+                unsafe { tile.call("place_building", &[BuildingType::Base.to_variant()]) };
+                break;
+            }
+        }
     }
 
     #[method]
@@ -153,6 +170,13 @@ impl Map {
             unsafe { t.call("toggle_highlight", &[true.to_variant()]) };
         };
     }
+
+    #[method]
+    fn place_building(&self, #[base] base: &Node, tile_position: Vector2, building_type: Building) {
+        let tile = self.get_tile_at_position(base, tile_position).unwrap();
+        unsafe { tile.call("place_building", &[building_type.to_variant()]) };
+        self.disable_tile_highlights(base);
+    }
 }
 
 #[derive(NativeClass)]
@@ -182,10 +206,10 @@ pub enum BuildingType {
 impl BuildingType {
     pub fn get_texture_path(&self) -> String {
         match self {
-            BuildingType::Base => "res://Sprites/Base".to_string(),
-            BuildingType::Mine => "res://Sprites/Mine".to_string(),
-            BuildingType::Greenhouse => "res://Sprites/Greenhouse".to_string(),
-            BuildingType::SolarPanel => "res://Sprites/SolarPanel".to_string(),
+            BuildingType::Base => "res://Sprites/Base.png".to_string(),
+            BuildingType::Mine => "res://Sprites/Mine.png".to_string(),
+            BuildingType::Greenhouse => "res://Sprites/Greenhouse.png".to_string(),
+            BuildingType::SolarPanel => "res://Sprites/SolarPanel.png".to_string(),
         }
     }
 }
@@ -284,7 +308,7 @@ impl Export for ResourceType {
     }
 }
 
-#[derive(NativeClass)]
+#[derive(NativeClass, ToVariant, FromVariant)]
 #[inherit(Node)]
 pub struct Building {
     #[property]
@@ -362,15 +386,34 @@ impl BuildingData {
         BuildingData {}
     }
 
+    // The idea is any other game object passes in _their_ base to grab _this_ node
+    pub fn get_singleton_node(base: &Node) -> TRef<'static, Node> {
+        unsafe {
+            base.get_node_as::<Node>("root/MainScene/BuildingData")
+                .unwrap()
+        }
+    }
+
     #[method]
     fn _ready(&self, #[base] _base: &Node) {
         godot_print!("Hello from Building Data!")
+    }
+
+    #[method]
+    fn data(&self, #[base] _base: &Node, building_type: BuildingType) -> Building {
+        match building_type {
+            BuildingType::Base => Building::base(),
+            BuildingType::Mine => Building::mine(),
+            BuildingType::Greenhouse => Building::greenhouse(),
+            BuildingType::SolarPanel => Building::solar_panel(),
+        }
     }
 }
 
 // use godot_sane_defaults::kb2d_move_and_slide;
 // Registers all exposed classes to Godot.
 fn init(handle: InitHandle) {
+    handle.add_class::<Building>();
     handle.add_class::<BuildingData>();
     handle.add_class::<Map>();
     handle.add_class::<Tile>();

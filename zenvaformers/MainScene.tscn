@@ -342,6 +342,7 @@ position = Vector2( 608, 324 )
 
 [node name="Tile111" parent="Tiles" instance=ExtResource( 1 )]
 position = Vector2( 672, 324 )
+start_tile = true
 
 [node name="Tile112" parent="Tiles" instance=ExtResource( 1 )]
 position = Vector2( 736, 324 )
