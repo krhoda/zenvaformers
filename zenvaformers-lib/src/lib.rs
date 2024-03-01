@@ -1,5 +1,11 @@
-use gdnative::api::Area2D;
-use gdnative::prelude::*;
+use gdnative::{
+    api::{Area2D, Resource},
+    export::{
+        hint::{EnumHint, IntHint},
+        Export,
+    },
+    prelude::*,
+};
 
 #[derive(NativeClass)]
 #[inherit(Area2D)]
@@ -43,10 +49,10 @@ impl Tile {
     }
 
     #[method]
-    fn place_building(&mut self, #[base] base: &Area2D, _building_texture: bool) {
+    fn place_building(&mut self, #[base] base: &Area2D, building_type: BuildingType) {
         self.has_building = true;
-        // TODO: How do I get ahole of building_texture? What is it's type?
-        // Self::get_building_icon(base).set_texture(building_texture)
+        let t = load::<Texture>(building_type.get_texture_path()).unwrap();
+        Self::get_building_icon(base).set_texture(t)
     }
 
     #[method]
@@ -165,9 +171,207 @@ impl UI {
     }
 }
 
+#[derive(Clone, PartialEq)]
+pub enum BuildingType {
+    Base = 0,
+    Mine = 1,
+    Greenhouse = 2,
+    SolarPanel = 3,
+}
+
+impl BuildingType {
+    pub fn get_texture_path(&self) -> String {
+        match self {
+            BuildingType::Base => "res://Sprites/Base".to_string(),
+            BuildingType::Mine => "res://Sprites/Mine".to_string(),
+            BuildingType::Greenhouse => "res://Sprites/Greenhouse".to_string(),
+            BuildingType::SolarPanel => "res://Sprites/SolarPanel".to_string(),
+        }
+    }
+}
+
+impl ToVariant for BuildingType {
+    fn to_variant(&self) -> Variant {
+        match self {
+            BuildingType::Base => 0.to_variant(),
+            BuildingType::Mine => 1.to_variant(),
+            BuildingType::Greenhouse => 2.to_variant(),
+            BuildingType::SolarPanel => 3.to_variant(),
+        }
+    }
+}
+
+impl FromVariant for BuildingType {
+    fn from_variant(variant: &Variant) -> Result<Self, FromVariantError> {
+        let result = i64::from_variant(variant)?;
+        match result {
+            0 => Ok(BuildingType::Base),
+            1 => Ok(BuildingType::Mine),
+            2 => Ok(BuildingType::Greenhouse),
+            3 => Ok(BuildingType::SolarPanel),
+            _ => Err(FromVariantError::UnknownEnumVariant {
+                variant: "i64".to_owned(),
+                expected: &["0", "1", "2", "3"],
+            }),
+        }
+    }
+}
+
+impl Export for BuildingType {
+    type Hint = IntHint<u32>;
+
+    fn export_info(_hint: Option<Self::Hint>) -> ExportInfo {
+        Self::Hint::Enum(EnumHint::new(vec![
+            "Base".to_owned(),
+            "Mine".to_owned(),
+            "Greenhouse".to_owned(),
+            "SolarPanel".to_owned(),
+        ]))
+        .export_info()
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub enum ResourceType {
+    Nothing = 0,
+    Food = 1,
+    Metal = 2,
+    Oxygen = 3,
+    Energy = 4,
+}
+
+impl ToVariant for ResourceType {
+    fn to_variant(&self) -> Variant {
+        match self {
+            ResourceType::Nothing => 0.to_variant(),
+            ResourceType::Food => 1.to_variant(),
+            ResourceType::Metal => 2.to_variant(),
+            ResourceType::Oxygen => 3.to_variant(),
+            ResourceType::Energy => 4.to_variant(),
+        }
+    }
+}
+
+impl FromVariant for ResourceType {
+    fn from_variant(variant: &Variant) -> Result<Self, FromVariantError> {
+        let result = i64::from_variant(variant)?;
+        match result {
+            0 => Ok(ResourceType::Nothing),
+            1 => Ok(ResourceType::Food),
+            2 => Ok(ResourceType::Metal),
+            3 => Ok(ResourceType::Oxygen),
+            4 => Ok(ResourceType::Energy),
+            _ => Err(FromVariantError::UnknownEnumVariant {
+                variant: "i64".to_owned(),
+                expected: &["0", "1", "2", "3"],
+            }),
+        }
+    }
+}
+
+impl Export for ResourceType {
+    type Hint = IntHint<u32>;
+
+    fn export_info(_hint: Option<Self::Hint>) -> ExportInfo {
+        Self::Hint::Enum(EnumHint::new(vec![
+            "Nothing".to_owned(),
+            "Food".to_owned(),
+            "Metal".to_owned(),
+            "Oxygen".to_owned(),
+            "Energy".to_owned(),
+        ]))
+        .export_info()
+    }
+}
+
+#[derive(NativeClass)]
+#[inherit(Node)]
+pub struct Building {
+    #[property]
+    building_type: BuildingType,
+    #[property]
+    resource_type: ResourceType,
+    #[property]
+    resource_amount: i32,
+    #[property]
+    upkeep_type: ResourceType,
+    #[property]
+    upkeep_amount: i32,
+}
+
+#[methods]
+impl Building {
+    fn new(_base: &Node) -> Self {
+        Building {
+            building_type: BuildingType::Base,
+            resource_amount: 0,
+            resource_type: ResourceType::Nothing,
+            upkeep_amount: 0,
+            upkeep_type: ResourceType::Nothing,
+        }
+    }
+
+    fn base() -> Self {
+        Building {
+            building_type: BuildingType::Base,
+            resource_amount: 0,
+            resource_type: ResourceType::Nothing,
+            upkeep_amount: 0,
+            upkeep_type: ResourceType::Nothing,
+        }
+    }
+
+    fn mine() -> Self {
+        Building {
+            building_type: BuildingType::Mine,
+            resource_amount: 1,
+            resource_type: ResourceType::Metal,
+            upkeep_amount: 1,
+            upkeep_type: ResourceType::Energy,
+        }
+    }
+
+    fn greenhouse() -> Self {
+        Building {
+            building_type: BuildingType::Greenhouse,
+            resource_amount: 1,
+            resource_type: ResourceType::Food,
+            upkeep_amount: 0,
+            upkeep_type: ResourceType::Nothing,
+        }
+    }
+
+    fn solar_panel() -> Self {
+        Building {
+            building_type: BuildingType::SolarPanel,
+            resource_amount: 1,
+            resource_type: ResourceType::Energy,
+            upkeep_amount: 0,
+            upkeep_type: ResourceType::Nothing,
+        }
+    }
+}
+
+#[derive(NativeClass)]
+#[inherit(Node)]
+pub struct BuildingData {}
+
+#[methods]
+impl BuildingData {
+    fn new(_base: &Node) -> Self {
+        BuildingData {}
+    }
+
+    #[method]
+    fn _ready(&self, #[base] _base: &Node) {
+        godot_print!("Hello from Building Data!")
+    }
+}
+
 // use godot_sane_defaults::kb2d_move_and_slide;
 // Registers all exposed classes to Godot.
 fn init(handle: InitHandle) {
+    handle.add_class::<BuildingData>();
     handle.add_class::<Map>();
     handle.add_class::<Tile>();
     handle.add_class::<UI>();
