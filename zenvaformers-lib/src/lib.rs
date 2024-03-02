@@ -654,6 +654,7 @@ impl GameManager {
 
         let b = Building::from_variant(&b).unwrap();
         self.add_to_resource_per_turn(base, b.resource_type, b.resource_amount);
+        self.add_to_resource_per_turn(base, b.upkeep_type, 0 - b.upkeep_amount);
     }
 
     #[method]
@@ -663,10 +664,6 @@ impl GameManager {
         self.current_metal += self.income_metal;
         self.current_oxygen += self.current_oxygen;
         self.turn_number += 1;
-
-        // let ui = unsafe { base.get_node_as::<Control>("UI").unwrap() };
-        // unsafe { ui.call("update_resource_text", &[self.state().to_variant()]) };
-        // unsafe { ui.call("on_end_turn", &[self.state().to_variant()]) };
     }
 }
 // use godot_sane_defaults::kb2d_move_and_slide;
