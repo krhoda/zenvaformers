@@ -36,25 +36,25 @@ rect_clip_content = true
 custom_fonts/font = ExtResource( 3 )
 text = "Turn 420"
 
-[node name="Building Buttons" type="HBoxContainer" parent="."]
+[node name="BuildingButtons" type="HBoxContainer" parent="."]
 margin_left = 34.0
 margin_top = 34.0
 margin_right = 270.0
 margin_bottom = 109.0
 alignment = 1
 
-[node name="MineButton" type="Button" parent="Building Buttons"]
+[node name="MineButton" type="Button" parent="BuildingButtons"]
 margin_right = 76.0
 margin_bottom = 75.0
 icon = ExtResource( 1 )
 
-[node name="GreenhouseButton" type="Button" parent="Building Buttons"]
+[node name="GreenhouseButton" type="Button" parent="BuildingButtons"]
 margin_left = 80.0
 margin_right = 156.0
 margin_bottom = 75.0
 icon = ExtResource( 4 )
 
-[node name="SolarPanelButton" type="Button" parent="Building Buttons"]
+[node name="SolarPanelButton" type="Button" parent="BuildingButtons"]
 margin_left = 160.0
 margin_right = 236.0
 margin_bottom = 75.0
@@ -99,3 +99,8 @@ custom_colors/font_color = Color( 0.866667, 0.65098, 0.0745098, 1 )
 custom_fonts/font = ExtResource( 3 )
 text = "25 (+80)
 25 (+80)"
+
+[connection signal="pressed" from="EndTurnButton" to="." method="_on_end_turn_button_pressed"]
+[connection signal="pressed" from="BuildingButtons/MineButton" to="." method="_on_mine_button_pressed"]
+[connection signal="pressed" from="BuildingButtons/GreenhouseButton" to="." method="_on_greenhouse_button_pressed"]
+[connection signal="pressed" from="BuildingButtons/SolarPanelButton" to="." method="_on_solar_panel_button_pressed"]
